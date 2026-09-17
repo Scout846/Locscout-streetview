@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LocScout Streetview</title>
+<style>
+  :root {
+    --bg: #f4f8f6;
+    --surface: #ffffff;
+    --border: #dfe7e2;
+    --border-strong: #c9d6cf;
+    --text: #1a2420;
+    --text-muted: #67766f;
+    --text-faint: #94a39c;
+    --accent: #1f8f5f;
+    --accent-hover: #17754c;
+    --accent-soft: #e7f4ee;
+    --accent-soft-border: #bfe1cf;
+    --error: #b5432f;
+    --error-soft: #fbeeec;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, 'Liberation Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 20px;
+    font-family: var(--sans);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(20, 30, 25, 0.04), 0 8px 24px rgba(20, 30, 25, 0.06);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 28px 28px 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .logo-mark {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-soft-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+  }
+
+  .header-text h1 {
+    margin: 0 0 3px;
+    font-size: 19px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .header-text p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .card-body {
+    padding: 0 28px 28px;
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    padding: 11px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 9px;
+    background: var(--surface);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  input[type="text"]::placeholder { color: var(--text-faint); }
+
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  button.primary {
+    padding: 11px 20px;
+    border: none;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 560;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+  }
+
+  button.primary:hover { background: var(--accent-hover); }
+  button.primary:disabled { background: var(--text-faint); cursor: default; }
+
+  /* Primary coordinate summary */
+  .summary {
+    border: 1px solid var(--accent-soft-border);
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    min-height: 20px;
+  }
+
+  .summary.state-empty {
+    background: var(--bg);
+    border-color: var(--border);
+  }
+
+  .summary.state-error {
+    background: var(--error-soft);
+    border-color: #eeccc4;
+  }
+
+  .summary-place {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+    line-height: 1.4;
+  }
+
+  .summary.state-empty .summary-place {
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  .summary.state-error .summary-place {
+    color: var(--error);
+    font-weight: 500;
+  }
+
+  .summary-coords {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .summary-actions {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Sources list */
+  .sources-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-faint);
+    margin: 0 0 8px 2px;
+  }
+
+  .sources {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .source-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    background: var(--surface);
+  }
+
+  .source-row + .source-row {
+    border-top: 1px solid var(--border);
+  }
+
+  .source-info { flex: 1; min-width: 0; }
+
+  .source-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .source-url {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .source-url.is-empty {
+    color: var(--text-faint);
+    font-family: var(--sans);
+    font-style: italic;
+  }
+
+  .source-actions {
+    flex: none;
+    display: flex;
+    gap: 4px;
+  }
+
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    text-decoration: none;
+  }
+
+  .icon-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent-soft-border);
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .icon-btn.is-copied {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  .quick-copy {
+    background: transparent;
+    border: 1px solid var(--accent-soft-border);
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 560;
+    padding: 6px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .quick-copy.visible { display: inline-flex; }
+  .quick-copy:hover { background: var(--accent-soft); }
+
+  footer {
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    text-align: center;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div id="appContent">
+    <div class="card-header">
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>LocScout Streetview</h1>
+        <p>Enter the street, house number and city.</p>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <form id="geoForm">
+        <input type="text" id="query" placeholder="e.g. Coolsingel 1, Rotterdam" autocomplete="off" />
+        <button class="primary" type="submit" id="searchBtn">Search</button>
+      </form>
+
+      <div class="summary state-empty" id="summary">
+        <div class="summary-place" id="summaryPlace">Enter an address or place.</div>
+        <div class="summary-coords" id="summaryCoords"></div>
+        <div class="summary-actions">
+          <button class="quick-copy" id="copyBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy coordinates
+          </button>
+        </div>
+      </div>
+
+      <p class="sources-label">Open on a map service</p>
+      <div class="sources">
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">Google Maps</div>
+            <div class="source-url is-empty" id="mapsResult">No result yet</div>
+          </div>
+          <div class="source-actions">
+            <button class="icon-btn" id="copyMapsBtn" type="button" title="Copy link" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a class="icon-btn" id="openMapsLink" href="#" target="_blank" rel="noopener" title="Open" style="pointer-events:none; opacity:0.4;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">Google Earth</div>
+            <div class="source-url is-empty" id="earthResult">No result yet</div>
+          </div>
+          <div class="source-actions">
+            <button class="icon-btn" id="copyEarthBtn" type="button" title="Copy link" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a class="icon-btn" id="openEarthLink" href="#" target="_blank" rel="noopener" title="Open" style="pointer-events:none; opacity:0.4;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">Apple Streetview</div>
+            <div class="source-url is-empty" id="appleResult">No result yet</div>
+          </div>
+          <div class="source-actions">
+            <button class="icon-btn" id="copyAppleBtn" type="button" title="Copy link" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a class="icon-btn" id="openAppleLink" href="#" target="_blank" rel="noopener" title="Open" style="pointer-events:none; opacity:0.4;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">Mapillary</div>
+            <div class="source-url is-empty" id="mapillaryResult">No result yet</div>
+          </div>
+          <div class="source-actions">
+            <button class="icon-btn" id="copyMapillaryBtn" type="button" title="Copy link" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a class="icon-btn" id="openMapillaryLink" href="#" target="_blank" rel="noopener" title="Open" style="pointer-events:none; opacity:0.4;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-info">
+            <div class="source-name">KartaView</div>
+            <div class="source-url is-empty" id="kartaviewResult">No result yet</div>
+          </div>
+          <div class="source-actions">
+            <button class="icon-btn" id="copyKartaviewBtn" type="button" title="Copy link" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a class="icon-btn" id="openKartaviewLink" href="#" target="_blank" rel="noopener" title="Open" style="pointer-events:none; opacity:0.4;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <button class="primary" id="openAllBtn" type="button" style="width:100%; margin-top:12px;" disabled>
+        Open all
+      </button>
+
+      <footer>Source: OpenStreetMap Nominatim &middot; open data, no key required</footer>
+    </div>
+  </div>
+  </div>
+
+<script>
+(function () {
+  try {
+  const form = document.getElementById('geoForm');
+  const input = document.getElementById('query');
+  const btn = document.getElementById('searchBtn');
+
+  const summaryEl = document.getElementById('summary');
+  const summaryPlaceEl = document.getElementById('summaryPlace');
+  const summaryCoordsEl = document.getElementById('summaryCoords');
+  const copyBtn = document.getElementById('copyBtn');
+
+  const mapsResultEl = document.getElementById('mapsResult');
+  const copyMapsBtn = document.getElementById('copyMapsBtn');
+  const openMapsLink = document.getElementById('openMapsLink');
+
+  const earthResultEl = document.getElementById('earthResult');
+  const copyEarthBtn = document.getElementById('copyEarthBtn');
+  const openEarthLink = document.getElementById('openEarthLink');
+
+  const appleResultEl = document.getElementById('appleResult');
+  const copyAppleBtn = document.getElementById('copyAppleBtn');
+  const openAppleLink = document.getElementById('openAppleLink');
+
+  const mapillaryResultEl = document.getElementById('mapillaryResult');
+  const copyMapillaryBtn = document.getElementById('copyMapillaryBtn');
+  const openMapillaryLink = document.getElementById('openMapillaryLink');
+
+  const kartaviewResultEl = document.getElementById('kartaviewResult');
+  const copyKartaviewBtn = document.getElementById('copyKartaviewBtn');
+  const openKartaviewLink = document.getElementById('openKartaviewLink');
+
+  const openAllBtn = document.getElementById('openAllBtn');
+
+  let lastCoords = '';
+  let lastMapsUrl = '';
+  let lastEarthUrl = '';
+  let lastAppleUrl = '';
+  let lastMapillaryUrl = '';
+  let lastKartaviewUrl = '';
+
+  function resetSourceRow(urlEl, copyBtnEl, openLinkEl) {
+    urlEl.textContent = 'No result yet';
+    urlEl.classList.add('is-empty');
+    copyBtnEl.disabled = true;
+    copyBtnEl.classList.remove('is-copied');
+    openLinkEl.style.pointerEvents = 'none';
+    openLinkEl.style.opacity = '0.4';
+  }
+
+  function fillSourceRow(urlEl, copyBtnEl, openLinkEl, url) {
+    urlEl.textContent = url;
+    urlEl.classList.remove('is-empty');
+    copyBtnEl.disabled = false;
+    openLinkEl.href = url;
+    openLinkEl.style.pointerEvents = 'auto';
+    openLinkEl.style.opacity = '1';
+  }
+
+  function wireCopy(buttonEl, getUrl) {
+    buttonEl.addEventListener('click', async () => {
+      const url = getUrl();
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        buttonEl.classList.add('is-copied');
+        setTimeout(() => buttonEl.classList.remove('is-copied'), 1200);
+      } catch {
+        buttonEl.title = 'Copy failed';
+      }
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Searching…';
+    copyBtn.classList.remove('visible');
+    summaryEl.className = 'summary state-empty';
+    summaryPlaceEl.textContent = 'Searching…';
+    summaryCoordsEl.textContent = '';
+
+    resetSourceRow(mapsResultEl, copyMapsBtn, openMapsLink);
+    resetSourceRow(earthResultEl, copyEarthBtn, openEarthLink);
+    resetSourceRow(appleResultEl, copyAppleBtn, openAppleLink);
+    resetSourceRow(mapillaryResultEl, copyMapillaryBtn, openMapillaryLink);
+    resetSourceRow(kartaviewResultEl, copyKartaviewBtn, openKartaviewLink);
+    openAllBtn.disabled = true;
+
+    try {
+      const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=' + encodeURIComponent(q);
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('Network error (' + res.status + ')');
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        summaryEl.className = 'summary state-error';
+        summaryPlaceEl.textContent = 'No result found for "' + q + '".';
+        return;
+      }
+
+      const place = data[0];
+      const lat = parseFloat(place.lat).toFixed(7);
+      const lon = parseFloat(place.lon).toFixed(7);
+      lastCoords = lat + ', ' + lon;
+
+      summaryEl.className = 'summary';
+      summaryPlaceEl.textContent = place.display_name;
+      summaryCoordsEl.textContent = 'lat: ' + lat + ', lon: ' + lon;
+      copyBtn.classList.add('visible');
+
+      lastMapsUrl = 'https://www.google.com/maps/@' + lat + ',' + lon + ',20z';
+      fillSourceRow(mapsResultEl, copyMapsBtn, openMapsLink, lastMapsUrl);
+
+      const addr = place.address || {};
+      const streetPart = [addr.road, addr.house_number].filter(Boolean).join(' ');
+      const cityPart = addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
+      const addressLabel = [streetPart, cityPart].filter(Boolean).join(', ') || q;
+      const earthSlug = addressLabel.trim().replace(/\s+/g, '+');
+      lastEarthUrl = 'https://earth.google.com/web/search/' + earthSlug;
+      fillSourceRow(earthResultEl, copyEarthBtn, openEarthLink, lastEarthUrl);
+
+      lastAppleUrl = 'https://lookmap.skzk.dev/#c=20/' + lat + '/' + lon;
+      fillSourceRow(appleResultEl, copyAppleBtn, openAppleLink, lastAppleUrl);
+
+      lastMapillaryUrl = 'https://www.mapillary.com/app/?lat=' + lat + '&lng=' + lon + '&z=19';
+      fillSourceRow(mapillaryResultEl, copyMapillaryBtn, openMapillaryLink, lastMapillaryUrl);
+
+      lastKartaviewUrl = 'https://kartaview.org/map/@' + lat + ',' + lon + ',19z';
+      fillSourceRow(kartaviewResultEl, copyKartaviewBtn, openKartaviewLink, lastKartaviewUrl);
+
+      openAllBtn.disabled = false;
+    } catch (err) {
+      summaryEl.className = 'summary state-error';
+      summaryPlaceEl.textContent = 'Something went wrong: ' + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Search';
+    }
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    if (!lastCoords) return;
+    try {
+      await navigator.clipboard.writeText(lastCoords);
+      copyBtn.querySelector('svg').style.display = 'none';
+      copyBtn.lastChild.textContent = 'Copied ✓';
+      setTimeout(() => {
+        copyBtn.querySelector('svg').style.display = '';
+        copyBtn.lastChild.textContent = 'Copy coordinates';
+      }, 1200);
+    } catch {
+      copyBtn.lastChild.textContent = 'Copy failed';
+    }
+  });
+
+  wireCopy(copyMapsBtn, () => lastMapsUrl);
+  wireCopy(copyEarthBtn, () => lastEarthUrl);
+  wireCopy(copyAppleBtn, () => lastAppleUrl);
+  wireCopy(copyMapillaryBtn, () => lastMapillaryUrl);
+  wireCopy(copyKartaviewBtn, () => lastKartaviewUrl);
+
+  openAllBtn.addEventListener('click', () => {
+    const urls = [lastMapsUrl, lastEarthUrl, lastAppleUrl, lastMapillaryUrl, lastKartaviewUrl].filter(Boolean);
+    let blocked = 0;
+    urls.forEach((url) => {
+      const win = window.open(url, '_blank', 'noopener');
+      if (!win) blocked++;
+    });
+    if (blocked > 0) {
+      summaryEl.className = 'summary state-error';
+      summaryPlaceEl.textContent = blocked + ' of ' + urls.length + ' tab(s) were blocked by your browser\'s pop-up blocker. Please allow pop-ups for this page and click "Open all" again.';
+    }
+  });
+  } catch (err) {
+    console.error('App init error:', err);
+  }
+})();
+</script>
+</body>
+</html>
